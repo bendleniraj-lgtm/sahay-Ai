@@ -1,0 +1,49 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: sahay-ai-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sahay_ai}
+      POSTGRES_USER: ${POSTGRES_USER:-sahay}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sahay123}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+    container_name: sahay-ai-backend
+    environment:
+      BACKEND_PORT: ${BACKEND_PORT:-8000}
+      POSTGRES_DB: ${POSTGRES_DB:-sahay_ai}
+      POSTGRES_USER: ${POSTGRES_USER:-sahay}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sahay123}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    volumes:
+      - ./backend:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: sahay-ai-frontend
+    environment:
+      VITE_API_URL: http://localhost:8000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+    command: npm run dev -- --host 0.0.0.0
+
+volumes:
+  postgres_data:
